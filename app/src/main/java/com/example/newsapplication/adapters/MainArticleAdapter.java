@@ -11,6 +11,7 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.fragment.app.FragmentActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -24,21 +25,22 @@ public class MainArticleAdapter extends RecyclerView.Adapter<MainArticleAdapter.
     private List<Article> articleArrayList;
     private Context context;
     private OnItemclickListner onItemclickListner;
-    public MainArticleAdapter(FragmentActivity activity, List<Article> articleArrayList, OnItemclickListner onItemclickListner) {
+    public MainArticleAdapter(FragmentActivity context, List<Article> articleArrayList, OnItemclickListner onItemclickListner) {
         this.context = context;
         this.articleArrayList = articleArrayList;
-        this.onItemclickListner = this.onItemclickListner;
+        this.onItemclickListner = onItemclickListner;
     }
     public interface OnItemclickListner {
         void onItemClick(int status, int position);
     }
+    @NonNull
     @Override
     public MainArticleAdapter.ViewHolder onCreateViewHolder(ViewGroup viewGroup, int i) {
         View view = LayoutInflater.from(viewGroup.getContext()).inflate(R.layout.row_main_article_adapter, viewGroup, false);
         return new MainArticleAdapter.ViewHolder(view);
     }
     @Override
-    public void onBindViewHolder(MainArticleAdapter.ViewHolder viewHolder, final int position) {
+    public void onBindViewHolder(@NonNull MainArticleAdapter.ViewHolder viewHolder, final int position) {
         final Article articleModel = articleArrayList.get(position);
         if(!TextUtils.isEmpty(articleModel.getTitle())) {
             viewHolder.titleText.setText(articleModel.getTitle());

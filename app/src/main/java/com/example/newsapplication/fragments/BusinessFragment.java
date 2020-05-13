@@ -19,14 +19,22 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.example.newsapplication.APIInterface;
+import com.example.newsapplication.ApiClient;
 import com.example.newsapplication.Article;
 import com.example.newsapplication.R;
+import com.example.newsapplication.ResponseModel;
 import com.example.newsapplication.WebActivity;
 import com.example.newsapplication.adapters.MainArticleAdapter;
 import com.example.newsapplication.databinding.LatestNewsFragmentBinding;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 import static com.example.newsapplication.Constants.API_KEY;
 import static com.example.newsapplication.Constants.business;
@@ -37,8 +45,7 @@ public class BusinessFragment extends Fragment implements  MainArticleAdapter.On
     private LatestNewsFragmentBinding latestNewsFragmentBinding;
     private MainArticleAdapter mainArticleAdapter;
     private MainArticleAdapter.OnItemclickListner onItemclickListner;
-    private LatestNewsViewModel mViewModel;
-    private ArrayList<Article> articleArrayList = new ArrayList<>();
+    private List<Article> articleList;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -49,8 +56,7 @@ public class BusinessFragment extends Fragment implements  MainArticleAdapter.On
         onItemclickListner = this;
         RecyclerView.LayoutManager mLayoutManager = new GridLayoutManager(getActivity(), 2);
         latestNewsFragmentBinding.newsListRecyclerview.setLayoutManager(mLayoutManager);
-        mViewModel = ViewModelProviders.of(this).get(LatestNewsViewModel.class);
-      //  fetchDetails();
+        loadNewsdata();
         return view;
     }
 
@@ -59,37 +65,39 @@ public class BusinessFragment extends Fragment implements  MainArticleAdapter.On
         super.onActivityCreated(savedInstanceState);
     }
 
-    private void fetchDetails() {
+
+    private void loadNewsdata() {
         final ProgressDialog progressDialog = new ProgressDialog(getActivity());
         progressDialog.setCancelable(false);
         progressDialog.setMessage("Please Wait");
         progressDialog.show();
-        observeResturantInfo();
-        mViewModel.fetchNewsInfo(business, API_KEY);
-        progressDialog.dismiss();
-
-    }
-
-
-    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
-    private void observeResturantInfo() {
-        mViewModel.getNews().observe(requireNonNull(getActivity()),
-                new Observer<ArrayList<Article>>() {
+        final APIInterface apiService = ApiClient.getClient().create(APIInterface.class);
+        Call<ResponseModel> call = apiService.getLatestNews(business, API_KEY);
+        call.enqueue(new Callback<ResponseModel>() {
             @Override
-            public void onChanged(ArrayList<Article> data) {
-                mainArticleAdapter = new MainArticleAdapter(getActivity(), data, onItemclickListner);
-                latestNewsFragmentBinding.newsListRecyclerview.setAdapter(mainArticleAdapter);
-                mainArticleAdapter.notifyDataSetChanged();
+            public void onResponse(Call<ResponseModel> call, Response<ResponseModel> response) {
+                if (response.body().getStatus().equals("ok")) {
+                    articleList = response.body().getArticles();
+                    if (articleList.size() > 0) {
+                        mainArticleAdapter = new MainArticleAdapter(getActivity(), articleList, onItemclickListner);
+                        latestNewsFragmentBinding.newsListRecyclerview.setAdapter(mainArticleAdapter);
+
+                    }
+                    progressDialog.dismiss();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ResponseModel> call, Throwable t) {
+                progressDialog.dismiss();
 
             }
         });
-
     }
-
     @Override
     public void onItemClick(int status, int position) {
         if (status == 1) {
-            String articlesURL = articleArrayList.get(position).getUrl();
+            String articlesURL = articleList.get(position).getUrl();
             if (!TextUtils.isEmpty(articlesURL)) {
                 Intent webActivity = new Intent(getActivity(), WebActivity.class);
                 webActivity.putExtra("url", articlesURL);
